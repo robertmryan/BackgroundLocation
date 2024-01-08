@@ -28,9 +28,7 @@ class ViewController: UIViewController {
         logger.debug(#function)
         super.viewDidLoad()
 
-        fetchLocations()
-        updateMapView()
-        mapView.userTrackingMode = .follow
+        configure()
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -44,6 +42,12 @@ class ViewController: UIViewController {
 // MARK: - Private implementation methods
 
 private extension ViewController {
+    func configure() {
+        fetchLocations()
+        updateMapView()
+        mapView.userTrackingMode = .follow
+    }
+
     func configureLocationService() {
         if !locationService.significantChangeServiceAvailable {
             showAlert("Significant change not available")
@@ -116,5 +120,20 @@ extension ViewController: UITableViewDataSource {
             .compactMap { dateFormatter.string(from: $0) }
             .joined(separator: " @ ")
         return cell
+    }
+}
+
+// MARK: - MKMapViewDelegate
+
+extension ViewController: MKMapViewDelegate {
+    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+        guard let polyline = overlay as? MKPolyline else {
+            return MKOverlayRenderer(overlay: overlay)
+        }
+
+        let renderer = MKPolylineRenderer(polyline: polyline)
+        renderer.strokeColor = .blue
+        renderer.lineWidth = 4
+        return renderer
     }
 }
