@@ -75,11 +75,11 @@ private extension ViewController {
             let lastTimestamp = self.locations.first?.locationTimestamp
 
             for location in locations where location.timestamp != lastTimestamp {
-                let newLocation = Location(context: LocationStore.shared.persistentContainer.viewContext)
-                newLocation.latitude = location.coordinate.latitude
-                newLocation.longitude = location.coordinate.longitude
-                newLocation.locationTimestamp = location.timestamp
-                newLocation.insertedTimestamp = Date()
+                let newLocation = LocationStore.shared.addLocation(
+                    latitude: location.coordinate.latitude,
+                    longitude: location.coordinate.longitude,
+                    timestamp: location.timestamp
+                )
                 self.locations.append(newLocation)
             }
 

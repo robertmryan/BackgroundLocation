@@ -63,4 +63,13 @@ class LocationStore {
         request.sortDescriptors = [NSSortDescriptor(key: "locationTimestamp", ascending: false)]
         return try persistentContainer.viewContext.fetch(request)
     }
+
+    func addLocation(latitude: Double, longitude: Double, timestamp: Date) -> Location {
+        let location = Location(context: persistentContainer.viewContext)
+        location.latitude = latitude
+        location.longitude = longitude
+        location.locationTimestamp = timestamp
+        location.insertedTimestamp = Date()
+        return location
+    }
 }
