@@ -23,6 +23,7 @@ class ViewController: UIViewController {
 
     @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var tableView: UITableView!
+    private var dataSource: UITableViewDiffableDataSource<Int, Location>!
 
     override func viewDidLoad() {
         logger.debug(#function)
@@ -43,9 +44,24 @@ class ViewController: UIViewController {
 
 private extension ViewController {
     func configure() {
+        configureTableView()
         fetchLocations()
         updateMapView()
         mapView.userTrackingMode = .follow
+    }
+
+    func configureTableView() {
+        dataSource = .init(tableView: tableView) { [weak self] tableView, indexPath, location in
+            guard let self else { return nil }
+            let cell = tableView.dequeueReusableCell(withIdentifier: "LocationCell", for: indexPath) as! LocationCell
+            cell.coordinateLabel.text = "\(location.longitude), \(location.latitude)"
+            cell.timestampLabel.text = [location.locationTimestamp, location.insertedTimestamp]
+                .compactMap { $0 }
+                .compactMap { self.dateFormatter.string(from: $0) }
+                .joined(separator: " @ ")
+            return cell
+        }
+        tableView.dataSource = dataSource
     }
 
     func configureLocationService() {
@@ -68,16 +84,24 @@ private extension ViewController {
             }
 
             LocationStore.shared.saveContext()
-            self.tableView.reloadData()
+            self.applySnapshot()
             self.updateMapView()
         }
 
         locationService.start()
     }
 
+    func applySnapshot() {
+        var snapshot = NSDiffableDataSourceSnapshot<Int, Location>()
+        snapshot.appendSections([0])
+        snapshot.appendItems(locations)
+        dataSource.apply(snapshot)
+    }
+
     func fetchLocations() {
         do {
             locations = try LocationStore.shared.locations()
+            applySnapshot()
         } catch {
             logger.error("\(#function) \(error)")
         }
@@ -101,25 +125,6 @@ private extension ViewController {
         let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
-    }
-}
-
-// MARK: - UITableViewDataSource
-
-extension ViewController: UITableViewDataSource {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        locations.count
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let location = locations[indexPath.row]
-        let cell = tableView.dequeueReusableCell(withIdentifier: "LocationCell", for: indexPath) as! LocationCell
-        cell.coordinateLabel.text = "\(location.longitude), \(location.latitude)"
-        cell.timestampLabel.text = [location.locationTimestamp, location.insertedTimestamp]
-            .compactMap { $0 }
-            .compactMap { dateFormatter.string(from: $0) }
-            .joined(separator: " @ ")
-        return cell
     }
 }
 
